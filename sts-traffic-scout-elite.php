@@ -25,3 +25,22 @@ add_action('plugins_loaded', function() {
         new \STSTraffic\Admin\Dashboard();
     }
 });
+
+// Forjando o Banco de Dados na Ativação
+register_activation_hook(__FILE__, function() {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'sts_traffic_stats';
+    $charset_collate = $wpdb->get_charset_collate();
+    $sql = "CREATE TABLE $table_name (
+        id bigint(20) NOT NULL AUTO_INCREMENT,
+        url_hash varchar(32) NOT NULL,
+        url text NOT NULL,
+        title text NOT NULL,
+        hits bigint(20) DEFAULT 0,
+        visit_date date NOT NULL,
+        PRIMARY KEY (id),
+        UNIQUE KEY unique_visit (url_hash, visit_date)
+    ) $charset_collate;";
+    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+    dbDelta($sql);
+});
