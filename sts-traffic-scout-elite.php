@@ -3,7 +3,7 @@
  * Plugin Name: Traffic Scout Elite
  * Plugin URI: https://descomplicandoreceitas.com.br
  * Description: Monitoramento ultra-leve de tráfego em tempo real com Social Proof dinâmico. Estilo God of War.
- * Version: 1.2.1
+ * Version: 1.2.5
  * Author: Juca Souza Bonini
  * License: GPLv2 or later
  * Text Domain: traffic-scout-elite
