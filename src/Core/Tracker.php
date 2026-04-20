@@ -50,7 +50,7 @@ class Tracker {
             return $u['url'] === $current_url;
         }));
 
-        if ($on_this_page < 1) $on_this_page = rand(1, 4);
+        if ($on_this_page < 1) return; // Não mostra nada se estiver vazio
 
         ?>
         <div id="traffic-scout-badge" style="position:fixed; bottom:20px; left:20px; background:rgba(10,10,10,0.85); backdrop-filter:blur(10px); color:#00ffa3; padding:12px 18px; border-radius:50px; font-family:'Inter', sans-serif; font-size:13px; font-weight:700; border:1px solid rgba(0,255,163,0.3); box-shadow:0 10px 30px rgba(0,0,0,0.5); display:flex; align-items:center; gap:10px; z-index:999999; animation:stsPulse 2s infinite; cursor:default;">
