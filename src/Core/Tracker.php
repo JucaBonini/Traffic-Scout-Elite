@@ -20,6 +20,14 @@ class Tracker {
         $now = time();
         $today = date('Y-m-d');
         $url = esc_url_raw(home_url(add_query_arg([], $GLOBALS['wp']->request)));
+        
+        // --- ESCUDO DE LIMPEZA (FILTRO TÉCNICO) ---
+        // Ignora arquivos de anúncios, sitemaps e arquivos técnicos
+        $blacklist = ['ads.txt', 'app-ads.txt', 'sitemap', 'robots.txt', '.xml', '.json', '.txt'];
+        foreach ($blacklist as $item) {
+            if (stripos($url, $item) !== false) return;
+        }
+
         $url_hash = md5($url);
         $title = get_the_title() ?: 'Home';
         $uid = md5($ip . $ua);
