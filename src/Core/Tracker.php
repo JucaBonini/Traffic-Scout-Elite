@@ -22,8 +22,8 @@ class Tracker {
         $url = esc_url_raw(home_url(add_query_arg([], $GLOBALS['wp']->request)));
         
         // --- ESCUDO DE LIMPEZA (FILTRO TÉCNICO) ---
-        // Ignora arquivos de anúncios, sitemaps e arquivos técnicos
-        $blacklist = ['ads.txt', 'app-ads.txt', 'sitemap', 'robots.txt', '.xml', '.json', '.txt'];
+        // Ignora favicons, imagens, scripts, sitemaps e arquivos técnicos
+        $blacklist = ['ads.txt', 'app-ads.txt', 'sitemap', 'robots.txt', '.xml', '.json', '.txt', '.ico', 'favicon', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.js', '.css'];
         foreach ($blacklist as $item) {
             if (stripos($url, $item) !== false) return;
         }
@@ -38,14 +38,21 @@ class Tracker {
         $users = array_filter($users, function($u) use ($now) { return ($now - $u['time']) < $this->window; });
         set_transient($this->transient_key, $users, HOUR_IN_SECONDS);
 
-        // 2. Atualizar Histórico (Database) - ON DUPLICATE KEY UPDATE para performance God Mode
+        // 2. Atualizar Histórico de Ranking (Hits)
         global $wpdb;
-        $table = $wpdb->prefix . 'sts_traffic_stats';
+        $table_stats = $wpdb->prefix . 'sts_traffic_stats';
         $wpdb->query($wpdb->prepare(
-            "INSERT INTO $table (url_hash, url, title, hits, visit_date) 
+            "INSERT INTO $table_stats (url_hash, url, title, hits, visit_date) 
              VALUES (%s, %s, %s, 1, %s) 
              ON DUPLICATE KEY UPDATE hits = hits + 1",
             $url_hash, $url, $title, $today
+        ));
+
+        // 3. Atualizar Telemetria Humana (Unique People)
+        $table_visitors = $wpdb->prefix . 'sts_traffic_visitors';
+        $wpdb->query($wpdb->prepare(
+            "INSERT IGNORE INTO $table_visitors (uid, visit_date) VALUES (%s, %s)",
+            $uid, $today
         ));
     }
 

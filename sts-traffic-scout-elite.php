@@ -3,7 +3,7 @@
  * Plugin Name: Traffic Scout Elite
  * Plugin URI: https://descomplicandoreceitas.com.br
  * Description: Monitoramento ultra-leve de tráfego em tempo real com Social Proof dinâmico. Estilo God of War.
- * Version: 1.2.5
+ * Version: 1.3.0
  * Author: Juca Souza Bonini
  * License: GPLv2 or later
  * Text Domain: traffic-scout-elite
@@ -29,9 +29,12 @@ add_action('plugins_loaded', function() {
 // Forjando o Banco de Dados na Ativação
 register_activation_hook(__FILE__, function() {
     global $wpdb;
-    $table_name = $wpdb->prefix . 'sts_traffic_stats';
     $charset_collate = $wpdb->get_charset_collate();
-    $sql = "CREATE TABLE $table_name (
+    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+
+    // Tabela 1: Hits por URL (Ranking)
+    $table_stats = $wpdb->prefix . 'sts_traffic_stats';
+    $sql1 = "CREATE TABLE $table_stats (
         id bigint(20) NOT NULL AUTO_INCREMENT,
         url_hash varchar(32) NOT NULL,
         url text NOT NULL,
@@ -41,6 +44,16 @@ register_activation_hook(__FILE__, function() {
         PRIMARY KEY (id),
         UNIQUE KEY unique_visit (url_hash, visit_date)
     ) $charset_collate;";
-    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-    dbDelta($sql);
+    dbDelta($sql1);
+
+    // Tabela 2: Visitantes Únicos (Telemetria Humana)
+    $table_visitors = $wpdb->prefix . 'sts_traffic_visitors';
+    $sql2 = "CREATE TABLE $table_visitors (
+        id bigint(20) NOT NULL AUTO_INCREMENT,
+        uid varchar(32) NOT NULL,
+        visit_date date NOT NULL,
+        PRIMARY KEY (id),
+        UNIQUE KEY unique_user_day (uid, visit_date)
+    ) $charset_collate;";
+    dbDelta($sql2);
 });

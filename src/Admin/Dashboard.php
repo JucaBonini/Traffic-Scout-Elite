@@ -35,18 +35,25 @@ class Dashboard {
 
     public function render_page() {
         global $wpdb;
-        $table = $wpdb->prefix . 'sts_traffic_stats';
+        $table_stats = $wpdb->prefix . 'sts_traffic_stats';
+        $table_visitors = $wpdb->prefix . 'sts_traffic_visitors';
         $users = get_transient('sts_traffic_online_users') ?: [];
         $period = $_GET['period'] ?? 'today';
         
-        // Lógica de Ranking Histórico
+        // 1. Cálculos de Telemetria Humana (Pessoas Únicas)
+        $stats_day = $wpdb->get_var("SELECT COUNT(*) FROM $table_visitors WHERE visit_date = CURDATE()");
+        $stats_month = $wpdb->get_var("SELECT COUNT(*) FROM $table_visitors WHERE visit_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)");
+        $stats_semester = $wpdb->get_var("SELECT COUNT(*) FROM $table_visitors WHERE visit_date >= DATE_SUB(CURDATE(), INTERVAL 180 DAY)");
+        $stats_year = $wpdb->get_var("SELECT COUNT(*) FROM $table_visitors WHERE visit_date >= DATE_SUB(CURDATE(), INTERVAL 365 DAY)");
+
+        // 2. Lógica de Ranking Histórico (Hits)
         $where = "visit_date = CURDATE()";
         if ($period === 'week') $where = "visit_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)";
         if ($period === 'month') $where = "visit_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
         
         $rank = $wpdb->get_results("
             SELECT url, title, SUM(hits) as total 
-            FROM $table 
+            FROM $table_stats 
             WHERE $where 
             GROUP BY url_hash 
             ORDER BY total DESC 
@@ -56,50 +63,70 @@ class Dashboard {
         <div class="sts-traffic-body">
             <div class="sts-traffic-card">
                 <div class="sts-traffic-header">
-                    <h1>Traffic Scout Elite <span style='font-size:11px; vertical-align:middle; background:#00ffa3; color:#000; padding:2px 8px; border-radius:4px;'>v1.2.0</span></h1>
+                    <h1>Traffic Scout Elite <span style='font-size:11px; vertical-align:middle; background:#00ffa3; color:#000; padding:2px 8px; border-radius:4px;'>v1.3.0</span></h1>
                     <button class="button" onclick="location.reload()" style="background:#00ffa3; border:0; color:#000; font-weight:bold;">REFRESH RADAR</button>
                 </div>
 
-                <div class="sts-big-metrics">
-                    <div class="sts-metric-box">
-                        <span class="sts-metric-val"><?php echo count($users); ?></span>
-                        <span class="sts-metric-label"><?php _e('Chefes Online Agora','traffic-scout-elite');?></span>
-                    </div>
-                    <div class="sts-metric-box">
-                        <span class="sts-metric-val" style="font-size:20px; padding:12px 0;"><?php echo !empty($rank) ? esc_html($rank[0]->title) : '---'; ?></span>
-                        <span class="sts-metric-label"><?php _e('Ranking #1 Atualmente','traffic-scout-elite');?></span>
+                <div style="margin-bottom:20px;">
+                    <h3 style="margin-top:0; color:#555; font-size:12px; text-transform:uppercase; letter-spacing:1px;">🚀 <?php _e('Telemetria Humana (Pessoas Únicas)','traffic-scout-elite');?></h3>
+                    <div class="sts-big-metrics">
+                        <div class="sts-metric-box">
+                            <span class="sts-metric-val"><?php echo number_format($stats_day); ?></span>
+                            <span class="sts-metric-label"><?php _e('Hoje','traffic-scout-elite');?></span>
+                        </div>
+                        <div class="sts-metric-box">
+                            <span class="sts-metric-val"><?php echo number_format($stats_month); ?></span>
+                            <span class="sts-metric-label"><?php _e('Este Mês','traffic-scout-elite');?></span>
+                        </div>
+                        <div class="sts-metric-box">
+                            <span class="sts-metric-val"><?php echo number_format($stats_semester); ?></span>
+                            <span class="sts-metric-label"><?php _e('Este Semestre','traffic-scout-elite');?></span>
+                        </div>
+                        <div class="sts-metric-box" style="border-color:#00ffa3;">
+                            <span class="sts-metric-val" style="color:#00ffa3;"><?php echo number_format($stats_year); ?></span>
+                            <span class="sts-metric-label"><?php _e('Total Este Ano','traffic-scout-elite');?></span>
+                        </div>
                     </div>
                 </div>
 
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                    <h2 style="color:#fff; font-size:18px; margin:0;"><div class="sts-live-pulse"></div> <?php _e('TOP 10 Elite Ranking','traffic-scout-elite');?></h2>
-                    <select class="sts-period-selector" onchange="location.href='?page=traffic-scout-elite&period='+this.val();" id="period-switch">
-                        <option value="today" <?php selected($period, 'today');?>><?php _e('Hoje (Real-time)','traffic-scout-elite');?></option>
-                        <option value="week" <?php selected($period, 'week');?>><?php _e('Últimos 7 dias','traffic-scout-elite');?></option>
-                        <option value="month" <?php selected($period, 'month');?>><?php _e('Últimos 30 dias','traffic-scout-elite');?></option>
-                    </select>
-                </div>
+                <div style="display:grid; grid-template-columns: 250px 1fr; gap:30px; margin-top:50px;">
+                    <div>
+                        <h3 style="margin-top:0; color:#555; font-size:12px; text-transform:uppercase;"><?php _e('Status do Radar','traffic-scout-elite');?></h3>
+                        <div class="sts-metric-box" style="padding:20px; margin-bottom:20px;">
+                             <span class="sts-metric-val" style="font-size:32px;"><?php echo count($users); ?></span>
+                             <span class="sts-metric-label"><?php _e('Lendo Agora','traffic-scout-elite');?></span>
+                        </div>
+                        <select class="sts-period-selector" style="width:100%" id="period-switch">
+                            <option value="today" <?php selected($period, 'today');?>><?php _e('Ranking de Hoje','traffic-scout-elite');?></option>
+                            <option value="week" <?php selected($period, 'week');?>><?php _e('Ranking da Semana','traffic-scout-elite');?></option>
+                            <option value="month" <?php selected($period, 'month');?>><?php _e('Ranking do Mês','traffic-scout-elite');?></option>
+                        </select>
+                    </div>
 
-                <table class="sts-traffic-table">
-                    <thead>
-                        <tr>
-                            <th style="width:50px;">POS</th>
-                            <th><?php _e('Página / Receita','traffic-scout-elite');?></th>
-                            <th style="text-align:right;"><?php _e('Total de Visualizações','traffic-scout-elite');?></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (empty($rank)) : ?>
-                            <tr><td colspan="3" style="text-align:center; padding:50px; color:#555;"><?php _e('Aguardando os primeiros dados de audiência...','traffic-scout-elite');?></td></tr>
-                        <?php else : $pos=1; foreach($rank as $r) : ?>
-                            <tr>
-                                <td><span class="sts-rank-num"><?php echo $pos++; ?></span></td>
-                                <td style="font-weight:bold; color:#fff;"><?php echo esc_html($r->title); ?><br><small style="color:#444; font-weight:normal;"><?php echo esc_url($r->url); ?></small></td>
-                                <td style="text-align:right; font-weight:bold; color:#00ffa3; font-size:18px;"><?php echo number_format($r->total); ?></td>
-                            </tr>
-                        <?php endforeach; endif; ?>
-                    </tbody>
-                </table>
+                    <div>
+                        <h2 style="color:#fff; font-size:18px; margin:0 0 20px 0;"><div class="sts-live-pulse"></div> <?php _e('Elite Ranking (Conteúdos Mais Vistos)','traffic-scout-elite');?></h2>
+                        <table class="sts-traffic-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:50px;">POS</th>
+                                    <th><?php _e('Página / Receita','traffic-scout-elite');?></th>
+                                    <th style="text-align:right;"><?php _e('Visualizações','traffic-scout-elite');?></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (empty($rank)) : ?>
+                                    <tr><td colspan="3" style="text-align:center; padding:50px; color:#555;"><?php _e('Aguardando os primeiros dados de audiência...','traffic-scout-elite');?></td></tr>
+                                <?php else : $pos=1; foreach($rank as $r) : ?>
+                                    <tr>
+                                        <td><span class="sts-rank-num"><?php echo $pos++; ?></span></td>
+                                        <td style="font-weight:bold; color:#fff;"><?php echo esc_html($r->title); ?><br><small style="color:#444; font-weight:normal;"><?php echo esc_url($r->url); ?></small></td>
+                                        <td style="text-align:right; font-weight:bold; color:#00ffa3; font-size:18px;"><?php echo number_format($r->total); ?></td>
+                                    </tr>
+                                <?php endforeach; endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
             
             <div class="sts-traffic-card" style="padding:20px;">
