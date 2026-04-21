@@ -23,6 +23,8 @@ add_action('plugins_loaded', function() {
     new \STSTraffic\Core\Tracker();
     if (is_admin()) {
         new \STSTraffic\Admin\Dashboard();
+        // Monitor de Updates GitHub
+        new \STSTraffic\Core\Updater('sts-traffic-scout-elite', '1.3.0', 'JucaBonini/Traffic-Scout-Elite');
     }
 });
 
